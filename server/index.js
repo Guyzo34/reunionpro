@@ -20,7 +20,7 @@ const app    = express();
 const upload = multer({ dest: "uploads/" });
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-app.use(cors());
+app.use(cors({ origin: "*" }));
 app.use(express.json());
 
 const DAILY_API  = "https://api.daily.co/v1";

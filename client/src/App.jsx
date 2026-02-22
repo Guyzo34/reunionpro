@@ -2,7 +2,7 @@ import "./index.css";
 import { useState, useEffect, useRef } from "react";
 import DailyIframe from "@daily-co/daily-js";
 
-const API = "/api";
+const API = import.meta.env.VITE_API_URL || "/api";
 
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap');
