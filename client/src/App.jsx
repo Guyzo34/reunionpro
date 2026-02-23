@@ -264,6 +264,13 @@ function Room({ session, onLeave }) {
   useEffect(() => {
     if (!containerRef.current) return;
     // Détruire toute instance existante avant d'en créer une nouvelle
+    // Sur mobile (iPhone/Android), ouvrir directement la salle Daily.co
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      window.location.href = session.roomUrl;
+      return;
+    }
+
     DailyIframe.getCallInstance()?.destroy();
     const frame = DailyIframe.createFrame(containerRef.current, {
       iframeStyle: { position:"absolute", top:0, left:0, width:"100%", height:"100%", border:"none", borderRadius:"12px" },
