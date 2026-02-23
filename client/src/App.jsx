@@ -175,7 +175,8 @@ function JoinModal({ onClose, onStart }) {
       const r = await fetch(API + "/rooms/token", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ roomName, userName: name, isOwner: false }) });
       const tok = await r.json();
       if (tok.error) throw new Error(JSON.stringify(tok.error));
-      onStart({ name, title:"Réunion", roomName, roomUrl: "https://api.daily.co/" + roomName, token: tok.token });
+      const roomUrl = tok.roomUrl || ("https://api.daily.co/" + roomName);
+      onStart({ name, title:"Réunion", roomName, roomUrl, token: tok.token });
     } catch(e) { setError(e.message); } finally { setLoad(false); }
   };
 

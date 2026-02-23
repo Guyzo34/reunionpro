@@ -88,7 +88,12 @@ app.post("/api/rooms/token", async (req, res) => {
     });
 
     const data = await response.json();
-    res.json(data);
+    
+    // Récupérer l'URL de la salle
+    const roomResponse = await fetch(`${DAILY_API}/rooms/${roomName}`, { headers: dailyHeaders });
+    const roomData = await roomResponse.json();
+    
+    res.json({ ...data, roomUrl: roomData.url });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
