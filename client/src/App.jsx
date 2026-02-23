@@ -2,7 +2,7 @@ import "./index.css";
 import { useState, useEffect, useRef } from "react";
 import DailyIframe from "@daily-co/daily-js";
 
-const API = import.meta.env.VITE_API_URL || "/api";
+const API = import.meta.env.VITE_API_URL || "https://reunionpro-production.up.railway.app/api";
 
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap');
@@ -257,7 +257,7 @@ function Room({ session, onLeave }) {
   const [toast,     setToast]   = useState(null);
 
   const code = session.roomName.replace("rp-","").toUpperCase();
-  const publicUrl = import.meta.env.VITE_PUBLIC_URL || window.location.origin;
+  const publicUrl = import.meta.env.VITE_PUBLIC_URL || "https://reunionpro.vercel.app";
   const link = publicUrl + "/join/" + code;
   const waLink = "https://wa.me/?text=" + encodeURIComponent("Rejoignez : " + (session.title||"Reunion") + " - " + link + " - Code : " + code);
 
