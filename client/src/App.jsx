@@ -163,7 +163,7 @@ function CreateModal({ onClose, onStart }) {
 // ── MODAL REJOINDRE ──────────────────────────────────────────
 function JoinModal({ onClose, onStart }) {
   const [name, setName]    = useState("");
-  const [code, setCode]    = useState("");
+  const [code, setCode]    = useState(window._joinCode || "");
   const [loading, setLoad] = useState(false);
   const [error, setError]  = useState(null);
 
@@ -257,7 +257,7 @@ function Room({ session, onLeave }) {
   const [toast,     setToast]   = useState(null);
 
   const code = session.roomName.replace("rp-","").toUpperCase();
-  const publicUrl = import.meta.env.VITE_PUBLIC_URL || "https://reunionpro.vercel.app";
+  const publicUrl = "https://reunionpro.vercel.app";
   const link = publicUrl + "/join/" + code;
   const waLink = "https://wa.me/?text=" + encodeURIComponent("Rejoignez : " + (session.title||"Reunion") + " - " + link + " - Code : " + code);
 
