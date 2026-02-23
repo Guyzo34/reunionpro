@@ -259,8 +259,9 @@ function Room({ session, onLeave }) {
 
   const code = session.roomName.replace("rp-","").toUpperCase();
   const publicUrl = "https://reunionpro.vercel.app";
+  const dailyDirectUrl = "https://digbeu.daily.co/" + session.roomName + "?t=" + session.token;
   const link = publicUrl + "/join/" + code;
-  const waLink = "https://wa.me/?text=" + encodeURIComponent("Rejoignez : " + (session.title||"Reunion") + " - " + link + " - Code : " + code);
+  const waLink = "https://wa.me/?text=" + encodeURIComponent("Rejoignez : " + (session.title||"Reunion") + " - Lien direct : " + dailyDirectUrl + " - Code : " + code);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -268,7 +269,8 @@ function Room({ session, onLeave }) {
     // Sur mobile (iPhone/Android), ouvrir directement la salle Daily.co
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     if (isMobile) {
-      window.location.href = session.roomUrl;
+      const dailyUrl = "https://digbeu.daily.co/" + session.roomName + "?t=" + session.token;
+      window.location.href = dailyUrl;
       return;
     }
 
