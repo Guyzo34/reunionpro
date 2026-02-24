@@ -4,7 +4,7 @@
 //   POST /api/rooms          → créer une salle Daily.co
 //   POST /api/rooms/token    → générer un token participant
 //   POST /api/transcribe     → transcrire un audio (Whisper)
-//   POST /api/summary        → générer le compte-rendu (Claude/OpenAI)
+//   POST /api/summary        → générer le compte-rendu (GPT-4o)
 // ─────────────────────────────────────────────────────────────
 require("dotenv").config();
 const express  = require("express");
@@ -43,10 +43,10 @@ app.post("/api/rooms", async (req, res) => {
         name      : roomName,
         privacy   : "private",
         properties: {
-          enable_recording: "cloud",         // enregistrement cloud
+          enable_recording: "cloud",
           enable_chat     : true,
           enable_screenshare: true,
-          exp             : Math.floor(Date.now() / 1000) + 60 * 60 * 4, // expire dans 4h
+          exp             : Math.floor(Date.now() / 1000) + 60 * 60 * 4,
           max_participants: 20,
           start_audio_off : false,
           start_video_off : false,
@@ -88,11 +88,10 @@ app.post("/api/rooms/token", async (req, res) => {
     });
 
     const data = await response.json();
-    
-    // Récupérer l'URL de la salle
+
     const roomResponse = await fetch(`${DAILY_API}/rooms/${roomName}`, { headers: dailyHeaders });
     const roomData = await roomResponse.json();
-    
+
     res.json({ ...data, roomUrl: roomData.url });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -118,15 +117,19 @@ app.post("/api/transcribe", upload.single("audio"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "Pas de fichier audio" });
 
+    // Renommer avec extension .webm pour que Whisper reconnaisse le format
+    const newPath = req.file.path + ".webm";
+    fs.renameSync(req.file.path, newPath);
+
     const transcription = await openai.audio.transcriptions.create({
-      file    : fs.createReadStream(req.file.path),
+      file    : fs.createReadStream(newPath),
       model   : "whisper-1",
       language: "fr",
-      response_format: "verbose_json",       // retourne les timestamps par segment
+      response_format: "verbose_json",
     });
 
     // Nettoyer le fichier temporaire
-    fs.unlinkSync(req.file.path);
+    fs.unlinkSync(newPath);
 
     res.json({
       text    : transcription.text,
