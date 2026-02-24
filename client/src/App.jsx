@@ -253,6 +253,7 @@ function Room({ session, onLeave }) {
   const containerRef  = useRef(null);
   const recorderRef   = useRef(null);
   const chunksRef     = useRef([]);
+  const savedBlobRef  = useRef(null);
 
   const [ready,     setReady]   = useState(false);
   const [showShare, setShare]   = useState(false);
@@ -284,6 +285,10 @@ function Room({ session, onLeave }) {
 
   const stopRecording = () => {
     if (recorderRef.current && recorderRef.current.state !== "inactive") {
+      recorderRef.current.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        savedBlobRef.current = blob;
+      };
       recorderRef.current.stop();
       recorderRef.current.stream?.getTracks().forEach(t => t.stop());
     }
@@ -292,7 +297,6 @@ function Room({ session, onLeave }) {
   };
 
   const handleLeave = () => {
-    // Stopper l'enregistrement et récupérer le blob audio
     if (recorderRef.current && recorderRef.current.state !== "inactive") {
       recorderRef.current.onstop = () => {
         const blob = new Blob(chunksRef.current, { type: "audio/webm" });
@@ -301,7 +305,7 @@ function Room({ session, onLeave }) {
       recorderRef.current.stop();
       recorderRef.current.stream?.getTracks().forEach(t => t.stop());
     } else {
-      onLeave(null);
+      onLeave(savedBlobRef.current);
     }
   };
 
