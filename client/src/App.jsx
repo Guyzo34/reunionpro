@@ -22,6 +22,13 @@ const css = `
   .d2 { animation-delay:.2s; }
   .d3 { animation-delay:.3s; }
   ::-webkit-scrollbar{width:6px} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+  @media print {
+    * { background: #fff !important; color: #000 !important; box-shadow: none !important; border-color: #ccc !important; animation: none !important; }
+    body { background: #fff !important; }
+    button { display: none !important; }
+    div[style*="linear-gradient"] { background: #fff !important; }
+    strong { color: #000 !important; }
+  }
 `;
 
 function Toast({ msg, onDone }) {
