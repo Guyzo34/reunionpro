@@ -2,7 +2,7 @@ import "./index.css";
 import { useState, useEffect, useRef } from "react";
 import DailyIframe from "@daily-co/daily-js";
 
-const API = import.meta.env.VITE_API_URL || "https://reunionpro-production.up.railway.app/api";
+const API = import.meta.env.VITE_API_URL || "https://reunionprobackend-z57y3kbv.b4a.run/api";
 
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap');
@@ -250,7 +250,10 @@ function WaitingRoom({ session, onEnter }) {
 
 // ── SALLE DE RÉUNION ─────────────────────────────────────────
 function Room({ session, onLeave }) {
-  const containerRef = useRef(null);
+  const containerRef  = useRef(null);
+  const recorderRef   = useRef(null);
+  const chunksRef     = useRef([]);
+
   const [ready,     setReady]   = useState(false);
   const [showShare, setShare]   = useState(false);
   const [recording, setRec]     = useState(false);
@@ -263,14 +266,50 @@ function Room({ session, onLeave }) {
   const link = publicUrl + "/join/" + code;
   const waLink = "https://wa.me/?text=" + encodeURIComponent("Rejoignez : " + (session.title||"Reunion") + " - Lien direct : " + dailyDirectUrl + " - Code : " + code);
 
+  // Démarrer l'enregistrement audio via le micro
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      chunksRef.current = [];
+      const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+      recorder.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      recorder.start(1000);
+      recorderRef.current = recorder;
+      setRec(true);
+      setToast("⏺️ Enregistrement démarré");
+    } catch(e) {
+      setToast("❌ Micro inaccessible");
+    }
+  };
+
+  const stopRecording = () => {
+    if (recorderRef.current && recorderRef.current.state !== "inactive") {
+      recorderRef.current.stop();
+      recorderRef.current.stream?.getTracks().forEach(t => t.stop());
+    }
+    setRec(false);
+    setToast("⏹️ Enregistrement arrêté");
+  };
+
+  const handleLeave = () => {
+    // Stopper l'enregistrement et récupérer le blob audio
+    if (recorderRef.current && recorderRef.current.state !== "inactive") {
+      recorderRef.current.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+        onLeave(blob);
+      };
+      recorderRef.current.stop();
+      recorderRef.current.stream?.getTracks().forEach(t => t.stop());
+    } else {
+      onLeave(null);
+    }
+  };
+
   useEffect(() => {
     if (!containerRef.current) return;
-    // Détruire toute instance existante avant d'en créer une nouvelle
-    // Sur mobile (iPhone/Android), ouvrir directement la salle Daily.co
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     if (isMobile) {
-      const dailyUrl = "https://digbeu.daily.co/" + session.roomName + "?t=" + session.token;
-      window.location.href = dailyUrl;
+      window.location.href = "https://digbeu.daily.co/" + session.roomName + "?t=" + session.token;
       return;
     }
 
@@ -282,10 +321,8 @@ function Room({ session, onLeave }) {
       lang: "fr",
     });
     frame.on("joined-meeting", () => setReady(true));
-    frame.on("loading",        () => console.log("Daily: loading"));
-    frame.on("loaded",         () => { console.log("Daily: loaded"); setReady(true); });
+    frame.on("loaded",         () => setReady(true));
     frame.on("started-camera", () => setReady(true));
-    // Fallback : masquer l'overlay après 4 secondes
     const fallback = setTimeout(() => setReady(true), 4000);
     frame.join({ url: session.roomUrl, token: session.token, userName: session.name });
     return () => { clearTimeout(fallback); try { frame.leave(); frame.destroy(); } catch(e){} };
@@ -325,7 +362,7 @@ function Room({ session, onLeave }) {
         </div>
       )}
 
-      {/* Vidéo Daily.co iframe */}
+      {/* Vidéo */}
       <div ref={containerRef} style={{ flex:1, position:"relative", margin:"8px" }}>
         {!ready && (
           <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"1rem", zIndex:10, background:"var(--bg)", borderRadius:12 }}>
@@ -340,11 +377,11 @@ function Room({ session, onLeave }) {
         <button onClick={() => setShare(v => !v)} style={{ height:44, padding:"0 1.1rem", borderRadius:12, border:`1px solid ${showShare?"var(--accent)":"var(--border)"}`, background:showShare?"var(--accent)":"var(--surface)", color:"#fff", cursor:"pointer", fontSize:".875rem" }}>
           🔗 Inviter
         </button>
-        <button onClick={() => { setRec(v => !v); setToast(recording ? "⏹️ Enregistrement arrêté" : "⏺️ Enregistrement démarré"); }} style={{ height:44, padding:"0 1.1rem", borderRadius:12, border:`1px solid ${recording?"var(--warn)":"var(--border)"}`, background:recording?"var(--warn)":"var(--surface)", color:recording?"#000":"#fff", cursor:"pointer", fontSize:".875rem" }}>
+        <button onClick={() => recording ? stopRecording() : startRecording()} style={{ height:44, padding:"0 1.1rem", borderRadius:12, border:`1px solid ${recording?"var(--warn)":"var(--border)"}`, background:recording?"var(--warn)":"var(--surface)", color:recording?"#000":"#fff", cursor:"pointer", fontSize:".875rem" }}>
           {recording ? "⏹️ Arrêter REC" : "⏺️ Enregistrer"}
         </button>
         <div style={{ width:1, height:30, background:"var(--border)" }}/>
-        <button onClick={onLeave} style={{ height:44, padding:"0 1.1rem", borderRadius:12, border:"1px solid var(--danger)", background:"var(--danger)", color:"#fff", cursor:"pointer", fontSize:".875rem" }}>
+        <button onClick={handleLeave} style={{ height:44, padding:"0 1.1rem", borderRadius:12, border:"1px solid var(--danger)", background:"var(--danger)", color:"#fff", cursor:"pointer", fontSize:".875rem" }}>
           📵 Quitter
         </button>
       </div>
@@ -354,52 +391,123 @@ function Room({ session, onLeave }) {
   );
 }
 
-// ── COMPTE-RENDU ─────────────────────────────────────────────
-function Summary({ session, onRestart }) {
-  const [progress, setProgress] = useState(0);
-  const [done,     setDone]     = useState(false);
+// ── COMPTE-RENDU (RÉEL) ──────────────────────────────────────
+function Summary({ session, audioBlob, onRestart }) {
+  const [step,       setStep]       = useState("transcribing"); // transcribing | summarizing | done | error
+  const [transcript, setTranscript] = useState("");
+  const [summary,    setSummary]    = useState("");
+  const [error,      setError]      = useState(null);
 
   useEffect(() => {
-    const steps = [20, 50, 80, 100];
-    let i = 0;
-    const t = setInterval(() => {
-      setProgress(steps[i]);
-      if (++i >= steps.length) { clearInterval(t); setTimeout(() => setDone(true), 500); }
-    }, 900);
-    return () => clearInterval(t);
+    if (!audioBlob) {
+      // Pas d'audio enregistré — afficher message
+      setStep("no-audio");
+      return;
+    }
+    runPipeline();
   }, []);
+
+  const runPipeline = async () => {
+    try {
+      // 1. Transcription
+      setStep("transcribing");
+      const formData = new FormData();
+      formData.append("audio", audioBlob, "reunion.webm");
+      const r1 = await fetch(API + "/transcribe", { method:"POST", body: formData });
+      if (!r1.ok) throw new Error("Erreur transcription : " + r1.status);
+      const t = await r1.json();
+      setTranscript(t.text);
+
+      // 2. Compte-rendu IA
+      setStep("summarizing");
+      const r2 = await fetch(API + "/summary", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          transcript: t.text,
+          title: session.title,
+          participants: [session.name],
+        })
+      });
+      if (!r2.ok) throw new Error("Erreur compte-rendu : " + r2.status);
+      const s = await r2.json();
+      setSummary(s.summary);
+      setStep("done");
+    } catch(e) {
+      setError(e.message);
+      setStep("error");
+    }
+  };
+
+  const stepLabel = {
+    transcribing: "Transcription audio en cours (Whisper)…",
+    summarizing:  "Génération du compte-rendu avec GPT-4o…",
+    done:         "Compte-rendu prêt ✅",
+    error:        "Une erreur est survenue",
+    "no-audio":   "Aucun enregistrement disponible",
+  };
 
   return (
     <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:"2rem" }}>
-      <div style={{ background:"var(--card)", border:"1px solid var(--border)", borderRadius:24, padding:"2.5rem", width:"min(600px,92vw)", animation:"fadeUp .4s ease both" }}>
+      <div style={{ background:"var(--card)", border:"1px solid var(--border)", borderRadius:24, padding:"2.5rem", width:"min(700px,92vw)", animation:"fadeUp .4s ease both" }}>
         <h2 style={{ fontFamily:"var(--font-h)", fontSize:"1.5rem", fontWeight:700, marginBottom:".4rem" }}>📋 Compte-rendu</h2>
-        <p style={{ fontSize:".85rem", color:"var(--muted)", marginBottom:"2rem" }}>{session.title || "Réunion"} · Animé par {session.name}</p>
+        <p style={{ fontSize:".85rem", color:"var(--muted)", marginBottom:"1.5rem" }}>{session.title || "Réunion"} · Animé par {session.name}</p>
 
-        {!done ? (
-          <>
-            <div style={{ height:4, background:"var(--surface)", borderRadius:4, overflow:"hidden", marginBottom:"1rem" }}>
-              <div style={{ height:"100%", background:"linear-gradient(90deg,var(--accent),var(--accent2))", borderRadius:4, width:progress+"%", transition:"width .5s ease" }}/>
-            </div>
-            <p style={{ fontSize:".85rem", color:"var(--muted)" }}>
-              {progress < 50 ? "Transcription audio…" : progress < 100 ? "Génération du compte-rendu IA…" : "Finalisation…"}
+        {/* Statut */}
+        {step !== "done" && (
+          <div style={{ marginBottom:"1.5rem" }}>
+            {(step === "transcribing" || step === "summarizing") && (
+              <div style={{ height:4, background:"var(--surface)", borderRadius:4, overflow:"hidden", marginBottom:".75rem" }}>
+                <div style={{ height:"100%", background:"linear-gradient(90deg,var(--accent),var(--accent2))", borderRadius:4, width: step==="transcribing" ? "50%" : "90%", transition:"width 1s ease" }}/>
+              </div>
+            )}
+            <p style={{ fontSize:".875rem", color: step==="error" ? "var(--danger)" : "var(--muted)" }}>
+              {step === "error" ? "❌ " + error : stepLabel[step]}
             </p>
-          </>
-        ) : (
-          <>
-            <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:14, padding:"1.4rem", marginBottom:"1.5rem", fontSize:".875rem", lineHeight:1.75, color:"#c5cce0" }}>
-              <strong style={{ color:"var(--accent2)", display:"block", marginBottom:".6rem" }}>📌 Résumé IA</strong>
-              La réunion <strong>{session.title}</strong> s'est tenue avec succès. Les participants ont échangé sur les points principaux de l'ordre du jour.
-              <br/><br/>
-              <strong style={{ color:"var(--warn)" }}>Actions à suivre :</strong><br/>
-              — Rédiger et distribuer le compte-rendu final<br/>
-              — Planifier la réunion de suivi
-            </div>
-            <div style={{ display:"flex", gap:".75rem" }}>
-              <button onClick={() => window.print()} style={{ flex:1, padding:".85rem", borderRadius:12, border:"none", background:"linear-gradient(135deg,var(--accent),#5a85ff)", color:"#fff", cursor:"pointer", fontFamily:"var(--font-b)", fontSize:".95rem" }}>📄 Exporter PDF</button>
-              <button onClick={onRestart} style={{ flex:1, padding:".85rem", borderRadius:12, border:"1px solid var(--border)", background:"var(--surface)", color:"var(--text)", cursor:"pointer", fontFamily:"var(--font-b)", fontSize:".95rem" }}>🏠 Accueil</button>
-            </div>
-          </>
+          </div>
         )}
+
+        {/* Transcription */}
+        {transcript && (
+          <div style={{ marginBottom:"1.5rem" }}>
+            <p style={{ fontSize:".78rem", color:"var(--muted)", textTransform:"uppercase", letterSpacing:".05em", marginBottom:".5rem" }}>Transcription</p>
+            <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:12, padding:"1rem", fontSize:".82rem", color:"#9aa3c0", lineHeight:1.7, maxHeight:160, overflowY:"auto" }}>
+              {transcript}
+            </div>
+          </div>
+        )}
+
+        {/* Compte-rendu IA */}
+        {step === "done" && summary && (
+          <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:14, padding:"1.4rem", marginBottom:"1.5rem", fontSize:".875rem", lineHeight:1.85, color:"#c5cce0", whiteSpace:"pre-wrap" }}>
+            <strong style={{ color:"var(--accent2)", display:"block", marginBottom:".75rem" }}>📌 Résumé IA</strong>
+            {summary}
+          </div>
+        )}
+
+        {/* Message pas d'audio */}
+        {step === "no-audio" && (
+          <div style={{ background:"#ffa50220", border:"1px solid var(--warn)", borderRadius:12, padding:"1rem", marginBottom:"1.5rem", fontSize:".875rem", color:"var(--warn)" }}>
+            ⚠️ Aucun enregistrement audio détecté. Pour obtenir un compte-rendu, utilisez le bouton <strong>⏺️ Enregistrer</strong> pendant la réunion.
+          </div>
+        )}
+
+        {/* Boutons */}
+        <div style={{ display:"flex", gap:".75rem", flexWrap:"wrap" }}>
+          {step === "done" && (
+            <button onClick={() => window.print()} style={{ flex:1, padding:".85rem", borderRadius:12, border:"none", background:"linear-gradient(135deg,var(--accent),#5a85ff)", color:"#fff", cursor:"pointer", fontFamily:"var(--font-b)", fontSize:".95rem" }}>
+              📄 Exporter PDF
+            </button>
+          )}
+          {step === "error" && (
+            <button onClick={runPipeline} style={{ flex:1, padding:".85rem", borderRadius:12, border:"none", background:"var(--warn)", color:"#000", cursor:"pointer", fontFamily:"var(--font-b)", fontSize:".95rem" }}>
+              🔄 Réessayer
+            </button>
+          )}
+          <button onClick={onRestart} style={{ flex:1, padding:".85rem", borderRadius:12, border:"1px solid var(--border)", background:"var(--surface)", color:"var(--text)", cursor:"pointer", fontFamily:"var(--font-b)", fontSize:".95rem" }}>
+            🏠 Accueil
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -407,17 +515,29 @@ function Summary({ session, onRestart }) {
 
 // ── APP SHELL ────────────────────────────────────────────────
 export default function App() {
-  const [screen,  setScreen]  = useState("landing");
-  const [modal,   setModal]   = useState(null);
-  const [session, setSession] = useState(null);
+  const [screen,    setScreen]    = useState("landing");
+  const [modal,     setModal]     = useState(null);
+  const [session,   setSession]   = useState(null);
+  const [audioBlob, setAudioBlob] = useState(null);
 
   return (
     <>
       <style>{css}</style>
       {screen === "landing" && <Landing onAction={setModal} />}
       {screen === "waiting" && <WaitingRoom session={session} onEnter={() => setScreen("room")} />}
-      {screen === "room"    && <Room session={session} onLeave={() => setScreen("summary")} />}
-      {screen === "summary" && <Summary session={session} onRestart={() => { setSession(null); setScreen("landing"); }} />}
+      {screen === "room"    && (
+        <Room
+          session={session}
+          onLeave={blob => { setAudioBlob(blob); setScreen("summary"); }}
+        />
+      )}
+      {screen === "summary" && (
+        <Summary
+          session={session}
+          audioBlob={audioBlob}
+          onRestart={() => { setSession(null); setAudioBlob(null); setScreen("landing"); }}
+        />
+      )}
       {modal === "create" && <CreateModal onClose={() => setModal(null)} onStart={d => { setSession(d); setModal(null); setScreen("waiting"); }} />}
       {modal === "join"   && <JoinModal   onClose={() => setModal(null)} onStart={d => { setSession(d); setModal(null); setScreen("waiting"); }} />}
     </>
