@@ -346,7 +346,7 @@ function Room({ session, onLeave }) {
     const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     const isWhatsApp = /WhatsApp/i.test(navigator.userAgent);
     if (isIOS && !isWhatsApp) {
-      const dailyUrl = "https://digbeu.daily.co/" + session.roomName + "?t=" + session.token;
+      const dailyUrl = "https://digbeu.daily.co/" + session.roomName + "?t=" + session.token + "&layout=grid";
       window.location.href = dailyUrl;
       return;
     }
