@@ -318,11 +318,6 @@ function Room({ session, onLeave }) {
 
   useEffect(() => {
     if (!containerRef.current) return;
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (isMobile) {
-      window.location.href = "https://digbeu.daily.co/" + session.roomName + "?t=" + session.token;
-      return;
-    }
 
     DailyIframe.getCallInstance()?.destroy();
     const frame = DailyIframe.createFrame(containerRef.current, {
