@@ -272,7 +272,7 @@ function Room({ session, onLeave }) {
   const publicUrl = "https://reunionpro.vercel.app";
   const dailyDirectUrl = "https://digbeu.daily.co/" + session.roomName + "?t=" + session.token;
   const link = publicUrl + "/join/" + code;
-  const waLink = "https://wa.me/?text=" + encodeURIComponent("Rejoignez : " + (session.title||"Reunion") + " - Lien direct : " + dailyDirectUrl + " - Code : " + code);
+  const waLink = "https://wa.me/?text=" + encodeURIComponent("Rejoignez la réunion : " + (session.title||"Reunion") + "\n\nLien : " + link + "\nCode : " + code);
 
   // Démarrer l'enregistrement audio via le micro
   const startRecording = async () => {
@@ -535,6 +535,17 @@ export default function App() {
   const [modal,     setModal]     = useState(null);
   const [session,   setSession]   = useState(null);
   const [audioBlob, setAudioBlob] = useState(null);
+
+  // Détecter /join/CODE dans l'URL au chargement
+  useEffect(() => {
+    const path = window.location.pathname;
+    const match = path.match(/\/join\/([a-zA-Z0-9]+)/);
+    if (match) {
+      window._joinCode = match[1];
+      setModal("join");
+      window.history.replaceState({}, "", "/");
+    }
+  }, []);
 
   return (
     <>
