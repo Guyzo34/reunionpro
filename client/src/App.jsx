@@ -207,11 +207,34 @@ function WaitingRoom({ session, onEnter }) {
   const [camOn, setCamOn]   = useState(true);
   const [micOn, setMicOn]   = useState(true);
 
+  // Détecter WhatsApp Browser sur iOS
+  const isWhatsAppBrowser = /WhatsApp/i.test(navigator.userAgent);
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
   useEffect(() => {
     navigator.mediaDevices?.getUserMedia({ video:true, audio:true })
       .then(s => { setStream(s); if (vRef.current) vRef.current.srcObject = s; })
       .catch(() => {});
   }, []);
+
+  // Afficher un message pour ouvrir dans Safari sur WhatsApp iOS
+  if (isWhatsAppBrowser && isIOS) {
+    return (
+      <div style={{ minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"2rem", gap:"1.5rem" }}>
+        <div style={{ fontFamily:"var(--font-h)", fontWeight:800, fontSize:".9rem", letterSpacing:"3px", textTransform:"uppercase", color:"var(--accent)" }}>● ReunionPro</div>
+        <div style={{ background:"var(--card)", border:"1px solid var(--warn)", borderRadius:20, padding:"2rem", maxWidth:340, textAlign:"center" }}>
+          <div style={{ fontSize:"2.5rem", marginBottom:"1rem" }}>📱</div>
+          <h3 style={{ fontFamily:"var(--font-h)", marginBottom:".75rem", color:"var(--warn)" }}>Ouvrir dans Safari</h3>
+          <p style={{ fontSize:".9rem", color:"var(--muted)", lineHeight:1.6, marginBottom:"1.5rem" }}>
+            Pour activer votre caméra et micro, ouvrez ce lien dans <strong style={{ color:"var(--text)" }}>Safari</strong> en appuyant sur <strong style={{ color:"var(--text)" }}>⋯ → Ouvrir dans Safari</strong>
+          </p>
+          <button onClick={onEnter} style={{ width:"100%", padding:".85rem", borderRadius:12, border:"none", background:"var(--surface)", color:"var(--muted)", fontFamily:"var(--font-b)", fontSize:".9rem", cursor:"pointer", borderTop:"1px solid var(--border)", borderLeft:"1px solid var(--border)", borderRight:"1px solid var(--border)", borderBottom:"1px solid var(--border)" }}>
+            Continuer quand même →
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"2rem", gap:"1.5rem" }}>
