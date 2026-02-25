@@ -342,6 +342,14 @@ function Room({ session, onLeave }) {
   useEffect(() => {
     if (!containerRef.current) return;
 
+    // Sur iOS Safari : rediriger vers Daily.co avec le token
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const isWhatsApp = /WhatsApp/i.test(navigator.userAgent);
+    if (isIOS && !isWhatsApp) {
+      window.location.href = session.roomUrl + "?t=" + session.token;
+      return;
+    }
+
     DailyIframe.getCallInstance()?.destroy();
     const frame = DailyIframe.createFrame(containerRef.current, {
       iframeStyle: { position:"absolute", top:0, left:0, width:"100%", height:"100%", border:"none", borderRadius:"12px" },
@@ -349,6 +357,7 @@ function Room({ session, onLeave }) {
       showFullscreenButton: true,
       lang: "fr",
       activeSpeakerMode: false,
+      allow: "camera; microphone; fullscreen; display-capture; autoplay",
     });
     frame.on("joined-meeting", () => setReady(true));
     frame.on("loaded",         () => setReady(true));
