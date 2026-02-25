@@ -490,9 +490,14 @@ function Summary({ session, audioBlob, onRestart }) {
 
         {/* Compte-rendu IA */}
         {step === "done" && summary && (
-          <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:14, padding:"1.4rem", marginBottom:"1.5rem", fontSize:".875rem", lineHeight:1.85, color:"#c5cce0", whiteSpace:"pre-wrap" }}>
+          <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:14, padding:"1.4rem", marginBottom:"1.5rem", fontSize:".875rem", lineHeight:1.85, color:"#c5cce0" }}>
             <strong style={{ color:"var(--accent2)", display:"block", marginBottom:".75rem" }}>📌 Résumé IA</strong>
-            {summary}
+            <div dangerouslySetInnerHTML={{ __html:
+              summary
+                .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+                .replace(/^---$/gm, "<hr style='border-color:#252c45;margin:.5rem 0'/>")
+                .replace(/\n/g, "<br/>")
+            }}/>
           </div>
         )}
 

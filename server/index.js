@@ -46,6 +46,7 @@ app.post("/api/rooms", async (req, res) => {
           enable_recording: "cloud",
           enable_chat     : true,
           enable_screenshare: true,
+          enable_screenshare_audio: true,
           exp             : Math.floor(Date.now() / 1000) + 60 * 60 * 4,
           max_participants: 20,
           start_audio_off : false,
