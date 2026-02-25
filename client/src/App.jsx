@@ -343,11 +343,13 @@ function Room({ session, onLeave }) {
     if (!containerRef.current) return;
 
     DailyIframe.getCallInstance()?.destroy();
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     const frame = DailyIframe.createFrame(containerRef.current, {
       iframeStyle: { position:"absolute", top:0, left:0, width:"100%", height:"100%", border:"none", borderRadius:"12px" },
       showLeaveButton: false,
       showFullscreenButton: true,
       lang: "fr",
+      layout: isMobile ? "grid" : "speaker",
     });
     frame.on("joined-meeting", () => setReady(true));
     frame.on("loaded",         () => setReady(true));
