@@ -358,7 +358,7 @@ function Room({ session, onLeave }) {
       showFullscreenButton: true,
       lang: "fr",
       activeSpeakerMode: false,
-      allow: "camera; microphone; fullscreen; display-capture; autoplay",
+      
     });
     frame.on("joined-meeting", () => setReady(true));
     frame.on("loaded",         () => setReady(true));
