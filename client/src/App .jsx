@@ -346,21 +346,31 @@ function Room({ session, onLeave }) {
     const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
     const isWhatsApp = /WhatsApp/i.test(navigator.userAgent);
     if (isIOS && !isWhatsApp) {
-      const dailyUrl = "https://digbeu.daily.co/" + session.roomName + "?t=" + session.token + "&layout=grid&showParticipantsBar=true&v=2";
+      const dailyUrl = session.roomUrl + "?t=" + session.token;
       window.location.href = dailyUrl;
       return;
     }
 
     DailyIframe.getCallInstance()?.destroy();
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     const frame = DailyIframe.createFrame(containerRef.current, {
       iframeStyle: { position:"absolute", top:0, left:0, width:"100%", height:"100%", border:"none", borderRadius:"12px" },
       showLeaveButton: false,
       showFullscreenButton: true,
       lang: "fr",
       activeSpeakerMode: false,
-      
+      allow: "camera; microphone; fullscreen; display-capture; autoplay",
     });
-    frame.on("joined-meeting", () => setReady(true));
+    frame.on("joined-meeting", () => {
+      setReady(true);
+      // Forcer le layout grille sur mobile avec intervenant actif en premier
+      try {
+        frame.setLayoutConfig({
+          preset: isMobile ? "default" : "default",
+          maxCamStreams: isMobile ? 9 : 25,
+        });
+      } catch(e) {}
+    });
     frame.on("loaded",         () => setReady(true));
     frame.on("started-camera", () => setReady(true));
     frame.on("joining-meeting",() => setReady(true));
