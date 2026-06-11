@@ -4,9 +4,9 @@ import OpenAI from "openai"
 export const dynamic = "force-dynamic"
 export const maxDuration = 60
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-
 export async function POST(request: Request) {
+  // Instanciation request-time : évite le crash au build quand la clé est absente
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   try {
     const { transcript, title, participants, duration } = (await request.json()) as {
       transcript: string

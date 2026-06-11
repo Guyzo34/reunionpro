@@ -1,8 +1,5 @@
-import dynamic from "next/dynamic"
-
-// SSR désactivé : DailyIframe accède à window/document
-const MeetingApp = dynamic(() => import("../components/meeting-app"), { ssr: false })
+import MeetingAppLoader from "../components/meeting-app-loader"
 
 export default function Page() {
-  return <MeetingApp />
+  return <MeetingAppLoader />
 }
